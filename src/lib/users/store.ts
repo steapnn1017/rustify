@@ -1,4 +1,5 @@
 import { loadJson, saveJson } from "@/lib/persist";
+import type { DiscordReview, NotificationPrefs } from "@/lib/support/types";
 
 export type DiscordLink = {
   id: string;
@@ -13,6 +14,13 @@ export type UserProfile = {
   discord: DiscordLink | null;
   statsServerId: string;
   updatedAt: string;
+  discordReview: DiscordReview | null;
+  notifications: NotificationPrefs;
+};
+
+const defaultNotifications: NotificationPrefs = {
+  discordDm: true,
+  browser: true,
 };
 
 type Store = {
@@ -32,12 +40,20 @@ function write(store: Store) {
 export function getUserProfile(steamId: string): UserProfile {
   const store = read();
   const existing = store.profiles[steamId];
-  if (existing) return existing;
+  if (existing) {
+    return {
+      ...existing,
+      discordReview: existing.discordReview ?? null,
+      notifications: existing.notifications ?? defaultNotifications,
+    };
+  }
   return {
     steamId,
     discord: null,
     statsServerId: "main",
     updatedAt: new Date().toISOString(),
+    discordReview: null,
+    notifications: defaultNotifications,
   };
 }
 
@@ -67,4 +83,15 @@ export function unlinkDiscord(steamId: string) {
 
 export function setStatsServer(steamId: string, statsServerId: string) {
   return upsertUserProfile(steamId, { statsServerId });
+}
+
+export function setNotificationPrefs(steamId: string, notifications: Partial<NotificationPrefs>) {
+  const current = getUserProfile(steamId);
+  return upsertUserProfile(steamId, {
+    notifications: { ...current.notifications, ...notifications },
+  });
+}
+
+export function setDiscordReview(steamId: string, discordReview: DiscordReview) {
+  return upsertUserProfile(steamId, { discordReview });
 }

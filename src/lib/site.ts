@@ -24,11 +24,12 @@ export const operator = {
 };
 
 export const nav = [
-  { href: "/", label: "Servers", icon: "servers" },
-  { href: "/store", label: "Queue Skip", icon: "store" },
-  { href: "/leaderboard", label: "Leaderboard", icon: "leaderboard" },
-  { href: "/support", label: "Support", icon: "support" },
-  { href: site.discord, label: "Discord", icon: "discord", external: true },
+  { href: "/", label: "Home" },
+  { href: "/#servers", label: "Servers" },
+  { href: "/map-voting", label: "Map Voting" },
+  { href: "/leaderboard", label: "Leaderboard" },
+  { href: "/store", label: "Store" },
+  { href: "/support", label: "Support" },
 ] as const;
 
 export const legalNav = [

@@ -6,11 +6,14 @@ import {
   ExternalLink,
   Map as MapIcon,
   MessagesSquare,
+  ShieldAlert,
+  ShieldCheck,
   Users,
   User,
   UsersRound,
 } from "lucide-react";
 import type { ServerSummary } from "@/lib/live";
+import type { WhitelistStatus } from "@/lib/whitelist/store";
 import { connectString, formatPlayers } from "@/lib/format";
 import { ConnectButton } from "@/components/ui/ConnectButton";
 import { CopyButton } from "@/components/ui/CopyButton";
@@ -34,11 +37,9 @@ const kindLabel: Record<ServerSummary["kind"], string> = {
 
 const REGIONS = ["all", "eu"] as const;
 const TAGS = ["all", "2x", "vanilla", "solo", "duo", "trio", "team8"] as const;
-const MONUMENTS = ["all", "launch", "oilrig", "harbor", "outpost"] as const;
 
 type Region = (typeof REGIONS)[number];
 type Tag = (typeof TAGS)[number];
-type Monument = (typeof MONUMENTS)[number];
 
 const regionLabel: Record<Region, string> = { all: "All regions", eu: "Europe" };
 const tagLabel: Record<Tag, string> = {
@@ -50,25 +51,12 @@ const tagLabel: Record<Tag, string> = {
   trio: "Trio",
   team8: "Team 8",
 };
-const monumentLabel: Record<Monument, string> = {
-  all: "All monuments",
-  launch: "Launch Site",
-  oilrig: "Oil Rig",
-  harbor: "Harbor",
-  outpost: "Outpost",
-};
 
 function serverMatchesTag(server: ServerSummary, tag: Tag) {
   if (tag === "all") return true;
   if (tag === "2x" || tag === "vanilla" || tag === "team8") return true;
   if (tag === "solo" || tag === "duo" || tag === "trio") return true;
   return true;
-}
-
-function serverMatchesMonument(server: ServerSummary, monument: Monument) {
-  if (monument === "all") return true;
-  // Procedural maps include common monuments at these sizes.
-  return server.map.size >= 3500;
 }
 
 export function ServerCard({ server }: { server: ServerSummary }) {
@@ -116,6 +104,10 @@ export function ServerCard({ server }: { server: ServerSummary }) {
         </p>
 
         <div className="tags">
+          <span className="is-whitelist">
+            <ShieldAlert size={12} strokeWidth={1.75} aria-hidden="true" />
+            Whitelist required
+          </span>
           <span>
             <MessagesSquare size={12} strokeWidth={1.75} aria-hidden="true" />
             Chat Translation
@@ -172,25 +164,23 @@ export function ServerCard({ server }: { server: ServerSummary }) {
   );
 }
 
-export function ServerGrid({ servers }: { servers: ServerSummary[] }) {
-  const sizes = useMemo(
-    () => Array.from(new Set(servers.map((s) => s.map.size))).sort((a, b) => a - b),
-    [servers],
-  );
+export function ServerGrid({
+  servers,
+  whitelistStatus,
+}: {
+  servers: ServerSummary[];
+  whitelistStatus: WhitelistStatus | null;
+}) {
   const [region, setRegion] = useState<Region>("eu");
   const [tag, setTag] = useState<Tag>("all");
-  const [monument, setMonument] = useState<Monument>("all");
-  const [mapSize, setMapSize] = useState<number | "all">("all");
 
   const filtered = useMemo(() => {
     return servers.filter((server) => {
       if (region !== "all" && region !== "eu") return false;
       if (!serverMatchesTag(server, tag)) return false;
-      if (!serverMatchesMonument(server, monument)) return false;
-      if (mapSize !== "all" && server.map.size !== mapSize) return false;
       return true;
     });
-  }, [servers, region, tag, monument, mapSize]);
+  }, [servers, region, tag]);
 
   const byRegion = useMemo(() => {
     const groups = new Map<string, ServerSummary[]>();
@@ -250,61 +240,32 @@ export function ServerGrid({ servers }: { servers: ServerSummary[] }) {
               ))
             }
           </Dropdown>
-
-          <Dropdown
-            label="Monuments"
-            valueLabel={monument === "all" ? "Monuments" : monumentLabel[monument]}
-            buttonClassName={monument !== "all" ? "filter is-on" : "filter"}
-          >
-            {(close) =>
-              MONUMENTS.map((item) => (
-                <DropdownItem
-                  key={item}
-                  active={monument === item}
-                  onSelect={() => {
-                    setMonument(item);
-                    close();
-                  }}
-                >
-                  {monumentLabel[item]}
-                </DropdownItem>
-              ))
-            }
-          </Dropdown>
-
-          <Dropdown
-            label="Map Size"
-            valueLabel={mapSize === "all" ? "Map Size" : String(mapSize)}
-            buttonClassName={mapSize !== "all" ? "filter is-on" : "filter"}
-          >
-            {(close) => (
-              <>
-                <DropdownItem
-                  active={mapSize === "all"}
-                  onSelect={() => {
-                    setMapSize("all");
-                    close();
-                  }}
-                >
-                  All sizes
-                </DropdownItem>
-                {sizes.map((size) => (
-                  <DropdownItem
-                    key={size}
-                    active={mapSize === size}
-                    onSelect={() => {
-                      setMapSize(size);
-                      close();
-                    }}
-                  >
-                    <MapIcon size={14} strokeWidth={1.75} aria-hidden="true" />
-                    {size}
-                  </DropdownItem>
-                ))}
-              </>
-            )}
-          </Dropdown>
         </div>
+
+        <aside className="wl-banner">
+          <span className="wl-banner__icon" aria-hidden="true">
+            {whitelistStatus === "verified" ? (
+              <ShieldCheck size={18} strokeWidth={1.75} />
+            ) : (
+              <ShieldAlert size={18} strokeWidth={1.75} />
+            )}
+          </span>
+          <div className="wl-banner__copy">
+            <strong>Whitelist required</strong>
+            {whitelistStatus === "verified" ? (
+              <p>Your request was verified. You can join on the Steam account you signed in with.</p>
+            ) : whitelistStatus === "pending" ? (
+              <p>Request sent. Staff still has to verify it before you can join.</p>
+            ) : (
+              <p>
+                To get whitelisted, open a request on Support. Staff has to verify it before you can join.
+              </p>
+            )}
+          </div>
+          <Link className="btn btn-primary" href="/support">
+            Request now
+          </Link>
+        </aside>
 
         {byRegion.length === 0 ? (
           <p className="filters-empty">No servers match these filters.</p>

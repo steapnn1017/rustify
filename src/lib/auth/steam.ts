@@ -6,11 +6,13 @@ const STEAM_OPENID = "https://steamcommunity.com/openid/login";
 export function steamLoginUrl(returnTo = "/", origin = site.url) {
   const callback = new URL("/api/auth/steam/callback", origin);
   callback.searchParams.set("returnTo", safeReturnTo(returnTo));
+  const configuredRealm = process.env.STEAM_REALM || "";
+  const realm = configuredRealm && origin.startsWith(configuredRealm) ? configuredRealm : origin;
   const params = new URLSearchParams({
     "openid.ns": "http://specs.openid.net/auth/2.0",
     "openid.mode": "checkid_setup",
     "openid.return_to": callback.toString(),
-    "openid.realm": process.env.STEAM_REALM || origin,
+    "openid.realm": realm,
     "openid.identity": "http://specs.openid.net/auth/2.0/identifier_select",
     "openid.claimed_id": "http://specs.openid.net/auth/2.0/identifier_select",
   });
@@ -23,7 +25,7 @@ export function safeReturnTo(value: string | null | undefined) {
 }
 
 export function extractSteamId(claimedId: string | null) {
-  const match = claimedId?.match(/\/id\/(\d{17})$/);
+  const match = claimedId?.match(/\/id\/(\d{17})/);
   return match?.[1] ?? null;
 }
 

@@ -10,13 +10,29 @@ export type SessionUser = {
 const COOKIE = "rustify_session";
 const MAX_AGE = 60 * 60 * 24 * 30;
 
+function siteUrl() {
+  return process.env.SITE_URL || process.env.NEXT_PUBLIC_SITE_URL || "";
+}
+
+function isLocalSite() {
+  const url = siteUrl();
+  return url.includes("localhost") || url.includes("127.0.0.1");
+}
+
 function secret() {
   const value = process.env.SESSION_SECRET;
   if (value && value.length >= 32) return value;
-  if (process.env.NODE_ENV === "production") {
+  if (process.env.NODE_ENV === "production" && !isLocalSite()) {
     throw new Error("SESSION_SECRET must be at least 32 characters");
   }
   return "dev-only-session-secret-change-me-32ch";
+}
+
+function useSecureCookies() {
+  const url = siteUrl();
+  if (url.startsWith("http://")) return false;
+  if (url.startsWith("https://")) return true;
+  return process.env.NODE_ENV === "production" && !isLocalSite();
 }
 
 function sign(payload: string) {
@@ -54,7 +70,7 @@ export async function setSession(user: SessionUser) {
   jar.set(COOKIE, encode(user), {
     httpOnly: true,
     sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    secure: useSecureCookies(),
     path: "/",
     maxAge: MAX_AGE,
   });
@@ -65,12 +81,20 @@ export async function clearSession() {
   jar.delete(COOKIE);
 }
 
-export function signOAuthState(steamId: string) {
-  const payload = Buffer.from(JSON.stringify({ steamId, at: Date.now() }), "utf8").toString("base64url");
+function safePath(value: string | undefined, fallback = "/account") {
+  if (!value || !value.startsWith("/") || value.startsWith("//")) return fallback;
+  return value;
+}
+
+export function signOAuthState(steamId: string, returnTo = "/account") {
+  const payload = Buffer.from(
+    JSON.stringify({ steamId, returnTo: safePath(returnTo), at: Date.now() }),
+    "utf8",
+  ).toString("base64url");
   return `${payload}.${sign(payload)}`;
 }
 
-export function readOAuthState(token: string): { steamId: string } | null {
+export function readOAuthState(token: string): { steamId: string; returnTo: string } | null {
   const [payload, signature] = token.split(".");
   if (!payload || !signature) return null;
   const expected = sign(payload);
@@ -80,10 +104,11 @@ export function readOAuthState(token: string): { steamId: string } | null {
   try {
     const data = JSON.parse(Buffer.from(payload, "base64url").toString("utf8")) as {
       steamId?: string;
+      returnTo?: string;
       at?: number;
     };
     if (!data.steamId || !data.at || Date.now() - data.at > 15 * 60 * 1000) return null;
-    return { steamId: data.steamId };
+    return { steamId: data.steamId, returnTo: safePath(data.returnTo) };
   } catch {
     return null;
   }

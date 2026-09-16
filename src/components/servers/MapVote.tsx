@@ -9,19 +9,24 @@ export function MapVote({
   slug,
   options,
   user,
+  title = "Next map vote",
+  returnTo,
 }: {
   slug: string;
   options: VoteOption[];
   user: SessionUser | null;
+  title?: string;
+  returnTo?: string;
 }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const total = options.reduce((sum, option) => sum + option.votes, 0) || 1;
+  const afterVote = returnTo || `/servers/${slug}`;
 
   async function vote(optionId: string) {
     if (!user) {
-      router.push(`/api/auth/steam?returnTo=/servers/${slug}`);
+      router.push(`/api/auth/steam?returnTo=${encodeURIComponent(afterVote)}`);
       return;
     }
     setPending(true);
@@ -44,7 +49,7 @@ export function MapVote({
   return (
     <section className="vote soft-panel">
       <header className="vote__head">
-        <h2>Next map vote</h2>
+        <h2>{title}</h2>
         <p>{user ? "One vote per wipe." : "Sign in with Steam to vote."}</p>
       </header>
 

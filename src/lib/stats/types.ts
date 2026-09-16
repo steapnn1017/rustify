@@ -12,6 +12,12 @@ export type PlayerStats = {
   source: "live" | "mock";
 };
 
+export type LeaderboardEntry = PlayerStats & {
+  name: string;
+  avatar: string;
+  rank: number;
+};
+
 export interface PlayerStatsProvider {
   getStats(steamId: string, serverId: string): Promise<PlayerStats>;
   setStats?(steamId: string, serverId: string, stats: Partial<PlayerStats>): Promise<PlayerStats>;

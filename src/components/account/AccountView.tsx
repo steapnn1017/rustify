@@ -116,7 +116,7 @@ export function AccountView({
                   <strong>{profile.discord.globalName || profile.discord.username}</strong>
                 </div>
               ) : (
-                <p className="account-panel__hint">Required for appeals.</p>
+                <p className="account-panel__hint">Required for appeals and whitelist.</p>
               )}
             </section>
 

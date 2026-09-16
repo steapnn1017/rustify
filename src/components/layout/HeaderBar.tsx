@@ -2,40 +2,25 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  Headphones,
-  Menu,
-  MessageCircle,
-  Server,
-  ShoppingBag,
-  Trophy,
-  X,
-} from "lucide-react";
+import { Globe, Menu, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { SessionUser } from "@/lib/auth/session";
-import { nav, site } from "@/lib/site";
+import { nav } from "@/lib/site";
 import { Dropdown, DropdownItem } from "@/components/ui/Dropdown";
-
-const icons = {
-  servers: Server,
-  store: ShoppingBag,
-  leaderboard: Trophy,
-  support: Headphones,
-  discord: MessageCircle,
-} as const;
 
 const LANG_KEY = "rustify_lang";
 
 const languages = [
-  { id: "en", label: "English", flag: "/flags/gb.svg" },
-  { id: "cs", label: "Čeština", flag: "/flags/cz.svg" },
+  { id: "en", label: "English", short: "EN", flag: "/flags/gb.svg" },
+  { id: "cs", label: "Čeština", short: "CS", flag: "/flags/cz.svg" },
 ] as const;
 
 type LangId = (typeof languages)[number]["id"];
 
-export function HeaderBar({ user }: { user: SessionUser | null }) {
+export function HeaderBar({ user, supportBadge = 0 }: { user: SessionUser | null; supportBadge?: number }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const [hash, setHash] = useState("");
   const [lang, setLang] = useState<LangId>("en");
   const loginHref = `/api/auth/steam?returnTo=${encodeURIComponent(pathname || "/")}`;
   const currentLang = languages.find((item) => item.id === lang) ?? languages[0];
@@ -49,6 +34,15 @@ export function HeaderBar({ user }: { user: SessionUser | null }) {
     }
   }, []);
 
+  useEffect(() => {
+    function syncHash() {
+      setHash(window.location.hash);
+    }
+    syncHash();
+    window.addEventListener("hashchange", syncHash);
+    return () => window.removeEventListener("hashchange", syncHash);
+  }, [pathname]);
+
   function chooseLang(next: LangId) {
     setLang(next);
     try {
@@ -60,43 +54,42 @@ export function HeaderBar({ user }: { user: SessionUser | null }) {
   }
 
   function isCurrent(href: string) {
-    if (href === "/") return pathname === "/";
+    if (href === "/#servers") return pathname === "/" && hash === "#servers";
+    if (href === "/") return pathname === "/" && hash !== "#servers";
     return pathname === href || pathname.startsWith(`${href}/`);
   }
 
   return (
     <header className="topbar">
       <div className="topbar__inner">
-        <Link className="brand" href="/">
+        <Link className="brand" href="/" aria-label="Rustify">
           <span className="brand__mark" aria-hidden="true">
             R
           </span>
-          <span className="brand__text">{site.shortName}</span>
+          <span className="brand__text">
+            Rust<span>ify</span>
+          </span>
         </Link>
 
         <nav className="topbar__nav" aria-label="Primary">
           {nav.map((item) => {
-            const Icon = icons[item.icon];
-            const external = "external" in item && item.external;
-            const active = !external && isCurrent(item.href);
-            const className = active ? "topbar__link is-active" : "topbar__link";
-            if (external) {
-              return (
-                <a key={item.href} className="topbar__link" href={item.href} rel="noreferrer" target="_blank">
-                  <Icon size={15} strokeWidth={1.7} aria-hidden="true" />
-                  {item.label}
-                </a>
-              );
-            }
+            const active = isCurrent(item.href);
             return (
               <Link
                 key={item.href}
-                className={className}
+                className={active ? "topbar__link is-active" : "topbar__link"}
                 href={item.href}
                 aria-current={active ? "page" : undefined}
+                onClick={() => {
+                  if (item.href.includes("#")) setHash("#servers");
+                  else setHash("");
+                  setOpen(false);
+                }}
               >
-                <Icon size={15} strokeWidth={1.7} aria-hidden="true" />
                 {item.label}
+                {item.href === "/support" && supportBadge > 0 ? (
+                  <i className="nav-dot" aria-label={`${supportBadge} unread`} />
+                ) : null}
               </Link>
             );
           })}
@@ -107,12 +100,9 @@ export function HeaderBar({ user }: { user: SessionUser | null }) {
             label="Language"
             className="lang-dd"
             align="right"
-            buttonClassName="lang-btn"
-            valueLabel={currentLang.label}
-            icon={
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={currentLang.flag} alt="" width={18} height={12} />
-            }
+            buttonClassName="topbar__tool"
+            valueLabel={currentLang.short}
+            icon={<Globe size={15} strokeWidth={1.7} aria-hidden="true" />}
           >
             {(close) =>
               languages.map((item) => (
@@ -137,15 +127,13 @@ export function HeaderBar({ user }: { user: SessionUser | null }) {
               label="Account"
               className="user-dd"
               align="right"
-              buttonClassName="user-chip"
-              valueLabel={user.name}
+              buttonClassName="topbar__tool"
+              valueLabel="Account"
               icon={
                 user.avatar ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={user.avatar} alt="" width={28} height={28} />
-                ) : (
-                  <span className="user-chip__fallback" aria-hidden="true" />
-                )
+                  <img className="topbar__avatar" src={user.avatar} alt="" width={18} height={18} />
+                ) : null
               }
             >
               {(close) => (
@@ -165,14 +153,8 @@ export function HeaderBar({ user }: { user: SessionUser | null }) {
               )}
             </Dropdown>
           ) : (
-            <a className="steam-btn" href={loginHref}>
-              <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
-                <path
-                  fill="currentColor"
-                  d="M12 2a10 10 0 0 0-10 9.3l5.4 2.2a2.7 2.7 0 0 1 2.7-1.4l3.8-5.5a3.4 3.4 0 1 1 2.7 1.6l-3.7 5.4c.4.2.8.6 1 1.1l5.9-2.4A10 10 0 0 0 12 2Zm-1.4 13.1-2.2-.9a2.7 2.7 0 1 0 2.5 4.4 2.7 2.7 0 0 0-.3-3.5Zm6.2-8.4a1.8 1.8 0 1 0 0 3.6 1.8 1.8 0 0 0 0-3.6Z"
-                />
-              </svg>
-              <span className="steam-btn__text">Sign in with Steam</span>
+            <a className="topbar__tool" href={loginHref}>
+              Account
             </a>
           )}
 
@@ -190,34 +172,19 @@ export function HeaderBar({ user }: { user: SessionUser | null }) {
 
       {open ? (
         <nav className="topbar__drawer" aria-label="Mobile">
-          {nav.map((item) =>
-            "external" in item && item.external ? (
-              <a key={item.href} href={item.href} rel="noreferrer" target="_blank">
-                {item.label}
-              </a>
-            ) : (
-              <Link key={item.href} href={item.href} onClick={() => setOpen(false)}>
-                {item.label}
-              </Link>
-            ),
-          )}
-          <div className="topbar__drawer-langs">
-            {languages.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                className={lang === item.id ? "chip is-active" : "chip"}
-                onClick={() => {
-                  chooseLang(item.id);
-                  setOpen(false);
-                }}
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img className="flag" src={item.flag} alt="" width={16} height={11} />
-                {item.label}
-              </button>
-            ))}
-          </div>
+          {nav.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              onClick={() => {
+                if (item.href.includes("#")) setHash("#servers");
+                else setHash("");
+                setOpen(false);
+              }}
+            >
+              {item.label}
+            </Link>
+          ))}
         </nav>
       ) : null}
     </header>

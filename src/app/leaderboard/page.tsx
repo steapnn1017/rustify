@@ -13,7 +13,10 @@ export const metadata: Metadata = {
 
 export default async function LeaderboardPage() {
   const raw = listLeaderboard();
-  const uniqueIds = [...new Set(raw.map((row) => row.steamId))].slice(0, 40);
+  const uniqueIds = [...new Set(raw.filter((row) => row.source === "live").map((row) => row.steamId))].slice(
+    0,
+    40,
+  );
   const profiles = await Promise.all(
     uniqueIds.map(async (steamId) => {
       const profile = await loadSteamProfile(steamId);
@@ -24,7 +27,7 @@ export default async function LeaderboardPage() {
   const entries = raw.map((row) => ({
     ...row,
     name: byId[row.steamId]?.name || row.name,
-    avatar: byId[row.steamId]?.avatar || "",
+    avatar: byId[row.steamId]?.avatar || row.avatar || "",
   }));
 
   return <LeaderboardView entries={entries} />;
