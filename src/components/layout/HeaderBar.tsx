@@ -3,59 +3,31 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Globe, Menu, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import type { SessionUser } from "@/lib/auth/session";
 import { nav } from "@/lib/site";
 import { Dropdown, DropdownItem } from "@/components/ui/Dropdown";
+import { flagUrl, languages, type Locale } from "@/lib/i18n/languages";
+import { useI18n } from "@/lib/i18n/I18nProvider";
 
-const LANG_KEY = "rustify_lang";
-
-const languages = [
-  { id: "en", label: "English", short: "EN", flag: "/flags/gb.svg" },
-  { id: "cs", label: "Čeština", short: "CS", flag: "/flags/cz.svg" },
-] as const;
-
-type LangId = (typeof languages)[number]["id"];
+const navKeys = {
+  "/": "navHome",
+  "/servers": "navServers",
+  "/map-voting": "navMapVoting",
+  "/leaderboard": "navLeaderboard",
+  "/store": "navStore",
+  "/support": "navSupport",
+} as const;
 
 export function HeaderBar({ user, supportBadge = 0 }: { user: SessionUser | null; supportBadge?: number }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
-  const [hash, setHash] = useState("");
-  const [lang, setLang] = useState<LangId>("en");
+  const { locale, setLocale, t } = useI18n();
   const loginHref = `/api/auth/steam?returnTo=${encodeURIComponent(pathname || "/")}`;
-  const currentLang = languages.find((item) => item.id === lang) ?? languages[0];
-
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem(LANG_KEY) as LangId | null;
-      if (saved === "en" || saved === "cs") setLang(saved);
-    } catch {
-      /* ignore */
-    }
-  }, []);
-
-  useEffect(() => {
-    function syncHash() {
-      setHash(window.location.hash);
-    }
-    syncHash();
-    window.addEventListener("hashchange", syncHash);
-    return () => window.removeEventListener("hashchange", syncHash);
-  }, [pathname]);
-
-  function chooseLang(next: LangId) {
-    setLang(next);
-    try {
-      localStorage.setItem(LANG_KEY, next);
-    } catch {
-      /* ignore */
-    }
-    document.documentElement.lang = next === "cs" ? "cs" : "en";
-  }
+  const currentLang = languages.find((item) => item.id === locale) ?? languages[0];
 
   function isCurrent(href: string) {
-    if (href === "/#servers") return pathname === "/" && hash === "#servers";
-    if (href === "/") return pathname === "/" && hash !== "#servers";
+    if (href === "/") return pathname === "/";
     return pathname === href || pathname.startsWith(`${href}/`);
   }
 
@@ -74,21 +46,18 @@ export function HeaderBar({ user, supportBadge = 0 }: { user: SessionUser | null
         <nav className="topbar__nav" aria-label="Primary">
           {nav.map((item) => {
             const active = isCurrent(item.href);
+            const key = navKeys[item.href];
             return (
               <Link
                 key={item.href}
                 className={active ? "topbar__link is-active" : "topbar__link"}
                 href={item.href}
                 aria-current={active ? "page" : undefined}
-                onClick={() => {
-                  if (item.href.includes("#")) setHash("#servers");
-                  else setHash("");
-                  setOpen(false);
-                }}
+                onClick={() => setOpen(false)}
               >
-                {item.label}
+                {t(key)}
                 {item.href === "/support" && supportBadge > 0 ? (
-                  <i className="nav-dot" aria-label={`${supportBadge} unread`} />
+                  <i className="nav-dot" aria-label={`${supportBadge} ${t("unread")}`} />
                 ) : null}
               </Link>
             );
@@ -97,7 +66,7 @@ export function HeaderBar({ user, supportBadge = 0 }: { user: SessionUser | null
 
         <div className="topbar__end">
           <Dropdown
-            label="Language"
+            label={t("language")}
             className="lang-dd"
             align="right"
             buttonClassName="topbar__tool"
@@ -108,14 +77,14 @@ export function HeaderBar({ user, supportBadge = 0 }: { user: SessionUser | null
               languages.map((item) => (
                 <DropdownItem
                   key={item.id}
-                  active={lang === item.id}
+                  active={locale === item.id}
                   onSelect={() => {
-                    chooseLang(item.id);
+                    setLocale(item.id as Locale);
                     close();
                   }}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img className="flag" src={item.flag} alt="" width={18} height={12} />
+                  <img className="flag" src={flagUrl(item.flag)} alt="" width={18} height={12} />
                   {item.label}
                 </DropdownItem>
               ))
@@ -124,11 +93,11 @@ export function HeaderBar({ user, supportBadge = 0 }: { user: SessionUser | null
 
           {user ? (
             <Dropdown
-              label="Account"
+              label={t("account")}
               className="user-dd"
               align="right"
               buttonClassName="topbar__tool"
-              valueLabel="Account"
+              valueLabel={t("account")}
               icon={
                 user.avatar ? (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -139,14 +108,14 @@ export function HeaderBar({ user, supportBadge = 0 }: { user: SessionUser | null
               {(close) => (
                 <>
                   <Link className="dd__item" href="/account" onClick={close} role="menuitem">
-                    Account
+                    {t("account")}
                   </Link>
                   <Link className="dd__item" href="/store" onClick={close} role="menuitem">
-                    Purchases
+                    {t("purchases")}
                   </Link>
                   <form action="/api/auth/logout" method="post">
                     <button className="dd__item" type="submit" role="menuitem">
-                      Sign out
+                      {t("signOut")}
                     </button>
                   </form>
                 </>
@@ -154,7 +123,7 @@ export function HeaderBar({ user, supportBadge = 0 }: { user: SessionUser | null
             </Dropdown>
           ) : (
             <a className="topbar__tool" href={loginHref}>
-              Account
+              {t("account")}
             </a>
           )}
 
@@ -162,7 +131,7 @@ export function HeaderBar({ user, supportBadge = 0 }: { user: SessionUser | null
             className="menu-btn"
             type="button"
             aria-expanded={open}
-            aria-label={open ? "Close menu" : "Open menu"}
+            aria-label={open ? t("closeMenu") : t("openMenu")}
             onClick={() => setOpen((v) => !v)}
           >
             {open ? <X size={18} /> : <Menu size={18} />}
@@ -173,16 +142,8 @@ export function HeaderBar({ user, supportBadge = 0 }: { user: SessionUser | null
       {open ? (
         <nav className="topbar__drawer" aria-label="Mobile">
           {nav.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              onClick={() => {
-                if (item.href.includes("#")) setHash("#servers");
-                else setHash("");
-                setOpen(false);
-              }}
-            >
-              {item.label}
+            <Link key={item.href} href={item.href} onClick={() => setOpen(false)}>
+              {t(navKeys[item.href])}
             </Link>
           ))}
         </nav>

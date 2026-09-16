@@ -14,12 +14,16 @@ import {
 } from "lucide-react";
 import type { ServerSummary } from "@/lib/live";
 import type { WhitelistStatus } from "@/lib/whitelist/store";
+import { regionFlag, serverHeadline } from "@/lib/live/catalog";
 import { connectString, formatPlayers } from "@/lib/format";
 import { ConnectButton } from "@/components/ui/ConnectButton";
 import { CopyButton } from "@/components/ui/CopyButton";
 import { Countdown } from "@/components/ui/Countdown";
 import { OccupancyBar } from "@/components/ui/OccupancyBar";
 import { Dropdown, DropdownItem } from "@/components/ui/Dropdown";
+import { useT } from "@/lib/i18n/I18nProvider";
+import { kindWipeKey, regionTitleKey } from "@/lib/i18n/labels";
+import type { Messages } from "@/lib/i18n/en";
 
 function wipeProgress(wipeAt: string, kind: ServerSummary["kind"]) {
   const end = new Date(wipeAt).getTime();
@@ -29,37 +33,37 @@ function wipeProgress(wipeAt: string, kind: ServerSummary["kind"]) {
   return Math.min(1, Math.max(0, (Date.now() - start) / periodMs));
 }
 
-const kindLabel: Record<ServerSummary["kind"], string> = {
-  main: "Weekly",
-  mondays: "Mondays",
-  monthly: "Monthly",
-};
-
-const REGIONS = ["all", "eu"] as const;
+const REGIONS = ["all", "eu", "us"] as const;
 const TAGS = ["all", "2x", "vanilla", "solo", "duo", "trio", "team8"] as const;
 
 type Region = (typeof REGIONS)[number];
 type Tag = (typeof TAGS)[number];
 
-const regionLabel: Record<Region, string> = { all: "All regions", eu: "Europe" };
-const tagLabel: Record<Tag, string> = {
-  all: "All tags",
-  "2x": "2x",
-  vanilla: "Vanilla stacks",
-  solo: "Solo",
-  duo: "Duo",
-  trio: "Trio",
-  team8: "Team 8",
-};
+function regionKey(item: Region): keyof Messages {
+  if (item === "all") return "allRegions";
+  return regionTitleKey(item);
+}
+
+function tagKey(item: Tag): keyof Messages | null {
+  if (item === "all") return "allTags";
+  if (item === "vanilla") return "vanillaStacks";
+  if (item === "solo") return "solo";
+  if (item === "duo") return "duo";
+  if (item === "trio") return "trio";
+  if (item === "team8") return "team8";
+  return null;
+}
 
 function serverMatchesTag(server: ServerSummary, tag: Tag) {
   if (tag === "all") return true;
-  if (tag === "2x" || tag === "vanilla" || tag === "team8") return true;
-  if (tag === "solo" || tag === "duo" || tag === "trio") return true;
+  if (tag === "2x" || tag === "vanilla") return true;
+  if (tag === "team8") return server.kind !== "sdt";
+  if (tag === "solo" || tag === "duo" || tag === "trio") return server.kind === "sdt";
   return true;
 }
 
 export function ServerCard({ server }: { server: ServerSummary }) {
+  const t = useT();
   const ip = connectString(server.connect.host, server.connect.port);
   const progress = wipeProgress(server.wipeAt, server.kind);
 
@@ -73,7 +77,7 @@ export function ServerCard({ server }: { server: ServerSummary }) {
           href={server.map.interactiveUrl}
           target="_blank"
           rel="noreferrer"
-          aria-label="Open map"
+          aria-label={t("openMap")}
         >
           <ExternalLink size={14} strokeWidth={1.75} />
         </a>
@@ -87,61 +91,66 @@ export function ServerCard({ server }: { server: ServerSummary }) {
         <div className="server__head">
           <div className="server__title">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img className="flag" src="/flags/eu.svg" alt="" width={22} height={15} />
+            <img className="flag" src={regionFlag(server.region)} alt="" width={22} height={15} />
             <h3>
-              [EU] Rustify {server.name} | Vanilla | {server.map.size}
+              {serverHeadline(server)} | {t("vanilla")} | {server.map.size}
             </h3>
           </div>
           <span className={server.online ? "live" : "live is-off"}>
             <i />
-            {server.online ? "LIVE" : "OFFLINE"}
+            {server.online ? t("live") : t("offline")}
           </span>
         </div>
 
         <p className="server__desc">
-          Wipe {kindLabel[server.kind].toLowerCase()} · 2× gather & loot · vanilla stacks · team UI 8.
-          {server.queue > 0 ? ` Queue ${server.queue}.` : ""} Seed {server.map.seed}.
+          {t("wipeWeekly", { kind: t(kindWipeKey(server.kind)).toLowerCase(), team: server.kind === "sdt" ? "3" : "8" })}
+          {server.queue > 0 ? ` ${t("queueCount", { n: server.queue })}` : ""} {t("seedValue", { n: server.map.seed })}
         </p>
 
         <div className="tags">
           <span className="is-whitelist">
             <ShieldAlert size={12} strokeWidth={1.75} aria-hidden="true" />
-            Whitelist required
+            {t("whitelist")}
           </span>
           <span>
             <MessagesSquare size={12} strokeWidth={1.75} aria-hidden="true" />
-            Chat Translation
+            {t("chatTranslation")}
           </span>
-          <span>
-            <Users size={12} strokeWidth={1.75} aria-hidden="true" />
-            Group Limit
-          </span>
-          <span>
-            <User size={12} strokeWidth={1.75} aria-hidden="true" />
-            Solo
-          </span>
-          <span>
-            <UsersRound size={12} strokeWidth={1.75} aria-hidden="true" />
-            Duo
-          </span>
-          <span>
-            <Users size={12} strokeWidth={1.75} aria-hidden="true" />
-            Trio
-          </span>
+          {server.kind === "sdt" ? (
+            <>
+              <span>
+                <User size={12} strokeWidth={1.75} aria-hidden="true" />
+                {t("solo")}
+              </span>
+              <span>
+                <UsersRound size={12} strokeWidth={1.75} aria-hidden="true" />
+                {t("duo")}
+              </span>
+              <span>
+                <Users size={12} strokeWidth={1.75} aria-hidden="true" />
+                {t("trio")}
+              </span>
+            </>
+          ) : (
+            <span>
+              <Users size={12} strokeWidth={1.75} aria-hidden="true" />
+              {t("groupLimit", { n: 8 })}
+            </span>
+          )}
         </div>
 
         <div className="server__foot">
           <div className="meters">
             <div className="meter">
               <div className="meter__top">
-                <span>Players</span>
+                <span>{t("players")}</span>
                 <strong>{formatPlayers(server.players, server.maxPlayers)}</strong>
               </div>
               <OccupancyBar value={server.players / server.maxPlayers} />
             </div>
             <div className="meter">
               <div className="meter__top">
-                <span>Wipe cycle</span>
+                <span>{t("wipeCycle")}</span>
                 <strong>
                   <Countdown target={server.wipeAt} />
                 </strong>
@@ -153,9 +162,9 @@ export function ServerCard({ server }: { server: ServerSummary }) {
           </div>
           <div className="server__actions">
             <ConnectButton host={server.connect.host} port={server.connect.port} />
-            <CopyButton value={ip} label="Copy IP" iconOnly />
+            <CopyButton value={ip} label={t("copyIp")} iconOnly />
             <Link className="btn btn-ghost" href={`/servers/${server.slug}`}>
-              Details
+              {t("details")}
             </Link>
           </div>
         </div>
@@ -171,12 +180,13 @@ export function ServerGrid({
   servers: ServerSummary[];
   whitelistStatus: WhitelistStatus | null;
 }) {
-  const [region, setRegion] = useState<Region>("eu");
+  const t = useT();
+  const [region, setRegion] = useState<Region>("all");
   const [tag, setTag] = useState<Tag>("all");
 
   const filtered = useMemo(() => {
     return servers.filter((server) => {
-      if (region !== "all" && region !== "eu") return false;
+      if (region !== "all" && server.region !== region) return false;
       if (!serverMatchesTag(server, tag)) return false;
       return true;
     });
@@ -185,7 +195,7 @@ export function ServerGrid({
   const byRegion = useMemo(() => {
     const groups = new Map<string, ServerSummary[]>();
     for (const server of filtered) {
-      const key = "Europe";
+      const key = server.region;
       const list = groups.get(key) ?? [];
       list.push(server);
       groups.set(key, list);
@@ -196,10 +206,14 @@ export function ServerGrid({
   return (
     <section className="servers" id="servers">
       <div className="container">
+        <header className="page-intro servers-intro">
+          <p className="kicker">{t("serversKicker")}</p>
+          <h1>{t("serversTitle")}</h1>
+        </header>
         <div className="filters">
           <Dropdown
-            label="Region"
-            valueLabel={region === "all" ? "Region" : regionLabel[region]}
+            label={t("stepRegion")}
+            valueLabel={region === "all" ? t("stepRegion") : t(regionKey(region))}
             buttonClassName={region !== "all" ? "filter is-on" : "filter"}
           >
             {(close) =>
@@ -214,15 +228,16 @@ export function ServerGrid({
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   {item === "eu" ? <img className="flag" src="/flags/eu.svg" alt="" width={18} height={12} /> : null}
-                  {regionLabel[item]}
+                  {item === "us" ? <img className="flag" src="/flags/us.svg" alt="" width={18} height={12} /> : null}
+                  {t(regionKey(item))}
                 </DropdownItem>
               ))
             }
           </Dropdown>
 
           <Dropdown
-            label="Tags"
-            valueLabel={tag === "all" ? "Tags" : tagLabel[tag]}
+            label={t("tags")}
+            valueLabel={tag === "all" ? t("tags") : tagKey(tag) ? t(tagKey(tag)!) : tag}
             buttonClassName={tag !== "all" ? "filter is-on" : "filter"}
           >
             {(close) =>
@@ -235,7 +250,7 @@ export function ServerGrid({
                     close();
                   }}
                 >
-                  {tagLabel[item]}
+                  {tagKey(item) ? t(tagKey(item)!) : item}
                 </DropdownItem>
               ))
             }
@@ -251,28 +266,26 @@ export function ServerGrid({
             )}
           </span>
           <div className="wl-banner__copy">
-            <strong>Whitelist required</strong>
+            <strong>{t("whitelist")}</strong>
             {whitelistStatus === "verified" ? (
-              <p>Your request was verified. You can join on the Steam account you signed in with.</p>
+              <p>{t("wlVerified")}</p>
             ) : whitelistStatus === "pending" ? (
-              <p>Request sent. Staff still has to verify it before you can join.</p>
+              <p>{t("wlPending")}</p>
             ) : (
-              <p>
-                To get whitelisted, open a request on Support. Staff has to verify it before you can join.
-              </p>
+              <p>{t("wlNeed")}</p>
             )}
           </div>
           <Link className="btn btn-primary" href="/support">
-            Request now
+            {t("requestNow")}
           </Link>
         </aside>
 
         {byRegion.length === 0 ? (
-          <p className="filters-empty">No servers match these filters.</p>
+          <p className="filters-empty">{t("serversEmpty")}</p>
         ) : (
-          byRegion.map(([label, list]) => (
-            <div key={label} className="region-block">
-              <p className="region-label">{label}</p>
+          byRegion.map(([key, list]) => (
+            <div key={key} className="region-block">
+              <p className="region-label">{t(regionTitleKey(key as "eu" | "us"))}</p>
               <div className="server-list">
                 {list.map((server) => (
                   <ServerCard key={server.id} server={server} />

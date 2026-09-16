@@ -1,4 +1,5 @@
-export type ServerKind = "main" | "mondays" | "monthly";
+export type ServerRegion = "eu" | "us";
+export type ServerKind = "main" | "mondays" | "monthly" | "sdt";
 
 export type MapInfo = {
   name: string;
@@ -39,6 +40,7 @@ export type ServerSummary = {
   slug: string;
   name: string;
   kind: ServerKind;
+  region: ServerRegion;
   online: boolean;
   players: number;
   maxPlayers: number;

@@ -4,6 +4,8 @@ import { AnalyticsGate } from "@/components/layout/AnalyticsGate";
 import { CookieBanner } from "@/components/layout/CookieBanner";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { SiteHeader } from "@/components/layout/SiteHeader";
+import { SkipLink } from "@/components/layout/SkipLink";
+import { I18nRoot } from "@/lib/i18n/I18nRoot";
 import { site } from "@/lib/site";
 import "./globals.css";
 
@@ -64,18 +66,18 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={`${sans.variable} ${mono.variable}`}>
+    <html lang="en" className={`${sans.variable} ${mono.variable}`} suppressHydrationWarning>
       <body>
-        <a className="skip-link" href="#content">
-          Skip to content
-        </a>
-        <SiteHeader />
-        <main id="content" className="site-main">
-          {children}
-        </main>
-        <SiteFooter />
-        <CookieBanner />
-        <AnalyticsGate />
+        <I18nRoot>
+          <SkipLink />
+          <SiteHeader />
+          <main id="content" className="site-main">
+            {children}
+          </main>
+          <SiteFooter />
+          <CookieBanner />
+          <AnalyticsGate />
+        </I18nRoot>
       </body>
     </html>
   );

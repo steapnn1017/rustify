@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useT } from "@/lib/i18n/I18nProvider";
 
 type Consent = {
   necessary: true;
@@ -12,6 +13,7 @@ type Consent = {
 const KEY = "rustify_consent";
 
 export function CookieBanner() {
+  const t = useT();
   const [visible, setVisible] = useState(false);
   const [customize, setCustomize] = useState(false);
   const [analytics, setAnalytics] = useState(false);
@@ -41,11 +43,10 @@ export function CookieBanner() {
     <div className="cookie-banner" role="dialog" aria-labelledby="cookie-title">
       <div className="container cookie-banner__inner">
         <div>
-          <h2 id="cookie-title">Cookies</h2>
+          <h2 id="cookie-title">{t("cookieTitle")}</h2>
           <p>
-            Necessary cookies keep you signed in and remember this choice. Analytics and marketing
-            cookies stay off until you allow them. Read the{" "}
-            <Link href="/legal/cookies">cookie policy</Link>.
+            {t("cookieBody")}{" "}
+            <Link href="/legal/cookies">{t("cookiePolicy")}</Link>.
           </p>
         </div>
         <div>
@@ -53,7 +54,7 @@ export function CookieBanner() {
             <div className="form" style={{ marginBottom: 12 }}>
               <label className="check">
                 <input type="checkbox" checked disabled readOnly />
-                <span>Necessary — session and consent (always on)</span>
+                <span>{t("cookieNecessary")}</span>
               </label>
               <label className="check">
                 <input
@@ -61,7 +62,7 @@ export function CookieBanner() {
                   checked={analytics}
                   onChange={(event) => setAnalytics(event.target.checked)}
                 />
-                <span>Analytics</span>
+                <span>{t("cookieAnalytics")}</span>
               </label>
               <label className="check">
                 <input
@@ -69,7 +70,7 @@ export function CookieBanner() {
                   checked={marketing}
                   onChange={(event) => setMarketing(event.target.checked)}
                 />
-                <span>Marketing</span>
+                <span>{t("cookieMarketing")}</span>
               </label>
             </div>
           ) : null}
@@ -79,18 +80,18 @@ export function CookieBanner() {
               type="button"
               onClick={() => save({ necessary: true, analytics: true, marketing: true })}
             >
-              Allow all
+              {t("cookieAllowAll")}
             </button>
             <button
               className="btn"
               type="button"
               onClick={() => save({ necessary: true, analytics, marketing })}
             >
-              {customize ? "Save choice" : "Necessary only"}
+              {customize ? t("cookieSave") : t("cookieNecessaryOnly")}
             </button>
             {customize ? null : (
               <button className="btn btn-ghost" type="button" onClick={() => setCustomize(true)}>
-                Customize
+                {t("cookieCustomize")}
               </button>
             )}
           </div>

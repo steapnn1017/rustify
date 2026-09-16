@@ -8,6 +8,13 @@ export type PlayerStats = {
   resourcesGathered: number;
   structuresBuilt: number;
   headshots: number;
+  scientists?: number;
+  gambling?: number;
+  raiding?: number;
+  events?: number;
+  puzzles?: number;
+  bought?: number;
+  looting?: number;
   lastSeenAt: string | null;
   source: "live" | "mock";
 };

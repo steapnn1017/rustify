@@ -5,7 +5,7 @@ import type {
   ServerSummary,
   VoteOption,
 } from "./types";
-import { connectFromEnv, currentMap, serverCatalog, sharedRuleset, wipeTimes } from "./catalog";
+import { connectFromEnv, currentMap, rulesetFor, serverCatalog, wipeTimes } from "./catalog";
 import { rustMapsCatalog, rustMapsPageUrl } from "./maps";
 import { getTally } from "@/lib/votes/store";
 
@@ -55,6 +55,7 @@ function toSummary(at: Date, config: (typeof serverCatalog)[number]): ServerSumm
     slug: config.slug,
     name: config.name,
     kind: config.kind,
+    region: config.region,
     online,
     players,
     maxPlayers: config.maxPlayers,
@@ -101,7 +102,7 @@ export class MockLiveDataProvider implements LiveDataProvider {
     const summary = toSummary(at, config);
     return {
       ...summary,
-      ruleset: sharedRuleset,
+      ruleset: rulesetFor(config),
       votes: voteOptions(slug),
       queriedAt: at.toISOString(),
     };

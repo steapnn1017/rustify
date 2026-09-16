@@ -19,13 +19,17 @@ export type Purchase = {
   serverName: string;
   tier: StoreTierId;
   amountCents: number;
-  currency: "EUR";
+  currency: "USD" | "EUR";
   status: "pending" | "paid" | "failed";
   createdAt: string;
   paidAt?: string;
   consent: ConsentLog;
   paymentProvider?: string;
   paymentSessionId?: string;
+  couponCode?: string;
+  discountCents?: number;
+  giftSteamId?: string;
+  billing?: "once" | "subscription";
 };
 
 const FILE = "purchases.json";

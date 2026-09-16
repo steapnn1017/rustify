@@ -6,9 +6,11 @@ export type CheckoutInput = {
   serverId: string;
   tierId: string;
   amountCents: number;
-  currency: "EUR";
+  currency: "USD";
   successUrl: string;
   cancelUrl: string;
+  billing?: "once" | "subscription";
+  giftSteamId?: string;
 };
 
 export type CheckoutSession = {
@@ -20,9 +22,12 @@ export type CheckoutSession = {
 
 export type PaymentEvent = {
   provider: string;
-  type: "payment.succeeded" | "payment.failed";
+  type: "payment.succeeded" | "payment.failed" | "subscription.renewed";
   orderId: string;
   sessionId: string;
+  steamId?: string;
+  serverId?: string;
+  tierId?: string;
 };
 
 export interface PaymentProvider {

@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Store",
-  description: "Queue Skip and VIP per server. Pro is Queue Skip on every Rustify box, plus skin box.",
+  description: "Queue Skip $5 and VIP $10 per server. Region VIP $25 covers every box in EU or US.",
 };
 
 export const dynamic = "force-dynamic";

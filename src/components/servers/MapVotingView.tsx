@@ -1,8 +1,11 @@
+"use client";
+
 import Link from "next/link";
 import type { SessionUser } from "@/lib/auth/session";
 import type { ServerSnapshot } from "@/lib/live";
 import { Countdown } from "@/components/ui/Countdown";
 import { MapVote } from "./MapVote";
+import { useT } from "@/lib/i18n/I18nProvider";
 
 export function MapVotingView({
   servers,
@@ -11,16 +14,14 @@ export function MapVotingView({
   servers: ServerSnapshot[];
   user: SessionUser | null;
 }) {
+  const t = useT();
   return (
     <section className="vote-hub">
       <div className="container vote-hub__inner">
         <header className="page-intro">
-          <p className="kicker">Cluster</p>
-          <h1>Map Voting</h1>
-          <p>
-            Pick the next procedural for each wipe. One Steam vote per server, and you can change it until wipe
-            lands.
-          </p>
+          <p className="kicker">{t("voteKicker")}</p>
+          <h1>{t("voteTitle")}</h1>
+          <p>{t("voteBody")}</p>
         </header>
 
         <div className="vote-hub__list">
@@ -30,22 +31,20 @@ export function MapVotingView({
                 <div>
                   <span className={server.online ? "live" : "live is-off"}>
                     <i />
-                    {server.online ? "LIVE" : "OFFLINE"}
+                    {server.online ? t("live") : t("offline")}
                   </span>
                   <h2>{server.name}</h2>
-                  <p>
-                    Current map {server.map.size} · seed {server.map.seed}
-                  </p>
+                  <p>{t("currentMap", { size: server.map.size, seed: server.map.seed })}</p>
                 </div>
                 <div className="vote-block__meta">
                   <div className="wipe-chip">
-                    <span>Map wipe</span>
+                    <span>{t("mapWipe")}</span>
                     <strong>
                       <Countdown target={server.wipeAt} />
                     </strong>
                   </div>
                   <Link className="btn btn-ghost btn-compact" href={`/servers/${server.slug}`}>
-                    Server page
+                    {t("serverPage")}
                   </Link>
                 </div>
               </header>
@@ -53,7 +52,7 @@ export function MapVotingView({
                 slug={server.slug}
                 options={server.votes}
                 user={user}
-                title="Candidates"
+                title={t("candidates")}
                 returnTo="/map-voting"
               />
             </article>

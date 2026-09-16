@@ -8,18 +8,18 @@ import type { Entitlement } from "@/lib/entitlements/store";
 import type { Purchase } from "@/lib/commerce/orders";
 import type { PlayerStats } from "@/lib/stats";
 import type { UserProfile } from "@/lib/users/store";
-import { formatDateTime, formatEur } from "@/lib/format";
+import { formatDateTime, formatUsd } from "@/lib/format";
 import { Countdown } from "@/components/ui/Countdown";
-import { CLUSTER_SERVER_ID } from "@/lib/store/catalog";
+import { entitlementScopeLabel, getTier } from "@/lib/store/catalog";
 import { serverCatalog } from "@/lib/live/catalog";
+import { useT } from "@/lib/i18n/I18nProvider";
 
 function tierLabel(tier: string) {
-  return tier.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  return getTier(tier)?.name ?? tier.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 function serverLabel(serverId: string) {
-  if (serverId === CLUSTER_SERVER_ID) return "All servers";
-  return serverCatalog.find((server) => server.id === serverId)?.name ?? serverId;
+  return entitlementScopeLabel(serverId);
 }
 
 export function AccountView({
@@ -39,6 +39,7 @@ export function AccountView({
   discordReady: boolean;
   discordStatus?: string;
 }) {
+  const t = useT();
   const router = useRouter();
   const [serverId, setServerId] = useState(profile.statsServerId);
   const [pendingServer, setPendingServer] = useState(false);
@@ -73,15 +74,15 @@ export function AccountView({
           </div>
           <form action="/api/auth/logout" method="post">
             <button className="btn btn-ghost btn-compact" type="submit">
-              Sign out
+            {t("signOut")}
             </button>
           </form>
         </header>
 
-        {discordStatus === "linked" ? <p className="alert">Discord linked.</p> : null}
+        {discordStatus === "linked" ? <p className="alert">{t("discordLinkedShort")}</p> : null}
         {discordStatus === "failed" ? (
           <p className="alert alert--error" role="alert">
-            Discord linking failed. Try again.
+            {t("discordFailed")}
           </p>
         ) : null}
 
@@ -101,7 +102,7 @@ export function AccountView({
                     className="btn btn-primary btn-compact"
                     href={discordReady ? "/api/auth/discord" : "/api/auth/discord/dev"}
                   >
-                    Link
+                    {t("linkDiscord")}
                   </a>
                 )}
               </div>
@@ -125,7 +126,7 @@ export function AccountView({
                 <h2>Active</h2>
                 {entitlements.length === 0 ? (
                   <Link className="btn btn-ghost btn-compact" href="/store">
-                    Store
+                    {t("navStore")}
                   </Link>
                 ) : null}
               </div>
@@ -169,23 +170,23 @@ export function AccountView({
               </div>
               <div className="stat-rail">
                 <div>
-                  <span>Kills</span>
+                  <span>{t("metricKills")}</span>
                   <strong>{stats.kills}</strong>
                 </div>
                 <div>
-                  <span>Deaths</span>
+                  <span>{t("deaths")}</span>
                   <strong>{stats.deaths}</strong>
                 </div>
                 <div>
-                  <span>K/D</span>
+                  <span>{t("kd")}</span>
                   <strong>{stats.kd.toFixed(2)}</strong>
                 </div>
                 <div>
-                  <span>Playtime</span>
+                  <span>{t("playtime")}</span>
                   <strong>{stats.playtimeHours}h</strong>
                 </div>
                 <div>
-                  <span>Headshots</span>
+                  <span>{t("headshots")}</span>
                   <strong>{stats.headshots}</strong>
                 </div>
                 <div>
@@ -204,7 +205,7 @@ export function AccountView({
             </section>
 
             <section className="soft-panel">
-              <h2>Purchases</h2>
+              <h2>{t("purchases")}</h2>
               {purchases.length === 0 ? (
                 <p className="account-panel__hint">No orders yet.</p>
               ) : (
@@ -212,11 +213,11 @@ export function AccountView({
                   <table className="table">
                     <thead>
                       <tr>
-                        <th>Invoice</th>
-                        <th>Server</th>
-                        <th>Tier</th>
-                        <th>Amount</th>
-                        <th>Status</th>
+                        <th>{t("invoice")}</th>
+                        <th>{t("server")}</th>
+                        <th>{t("vip")}</th>
+                        <th>{t("amount")}</th>
+                        <th>{t("status")}</th>
                         <th>Date</th>
                       </tr>
                     </thead>
@@ -228,7 +229,7 @@ export function AccountView({
                           </td>
                           <td>{purchase.serverName}</td>
                           <td>{purchase.tier}</td>
-                          <td>{formatEur(purchase.amountCents)}</td>
+                          <td>{formatUsd(purchase.amountCents)}</td>
                           <td>{purchase.status}</td>
                           <td>{formatDateTime(purchase.createdAt)}</td>
                         </tr>

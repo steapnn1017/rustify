@@ -1,11 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, Check, ShoppingBag } from "lucide-react";
 import { useMemo, useState } from "react";
+import { Check, ShoppingBag } from "lucide-react";
 import type { ServerSummary } from "@/lib/live";
-import { formatEur } from "@/lib/format";
+import type { ServerRegion } from "@/lib/live/types";
+import { formatUsd } from "@/lib/format";
+import { clusterRegions, regionFlag, serverHeadline } from "@/lib/live/catalog";
 import { getTier } from "@/lib/store/catalog";
+import { useT } from "@/lib/i18n/I18nProvider";
+import { regionTitleKey } from "@/lib/i18n/labels";
 
 export function StoreView({
   servers,
@@ -14,111 +18,118 @@ export function StoreView({
   servers: ServerSummary[];
   initialSlug?: string;
 }) {
-  const first = servers[0]?.slug ?? "main";
-  const [slug, setSlug] = useState(
-    initialSlug && servers.some((s) => s.slug === initialSlug) ? initialSlug : first,
-  );
-  const server = useMemo(() => servers.find((item) => item.slug === slug) ?? servers[0], [servers, slug]);
-  const vip = getTier("vip")!;
+  const t = useT();
+  const initialRegion =
+    servers.find((item) => item.slug === initialSlug)?.region ??
+    servers.find((item) => item.region === "eu")?.region ??
+    "eu";
+  const [region, setRegion] = useState<ServerRegion>(initialRegion);
   const queue = getTier("queue_skip")!;
-  const pro = getTier("pro")!;
-  if (!server) return null;
-
-  const save = vip.priceCents * servers.length - pro.priceCents;
+  const vip = getTier("vip")!;
+  const regionVip = getTier("region_vip")!;
+  const list = useMemo(() => servers.filter((item) => item.region === region), [servers, region]);
+  const regionLabel = t(regionTitleKey(region));
+  const regionCode = region === "us" ? "US" : "EU";
 
   return (
     <section className="shop">
-      <div className="shop__bg" aria-hidden="true">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/store-bg.svg" alt="" />
-        <div className="shop__veil" />
-      </div>
-
       <div className="container shop__inner">
         <header className="shop__head">
-          <div className="shop__brand">
-            <span className="brand__mark brand__mark--md" aria-hidden="true">
-              R
-            </span>
-            <div>
-              <h1>Rustify</h1>
-              <p>No waiting around — all purchases are automatically delivered!</p>
-            </div>
+          <div>
+            <p className="kicker">{t("storeKicker")}</p>
+            <h1>{t("storeTitle")}</h1>
+            <p>{t("storeBody")}</p>
           </div>
           <Link className="btn btn-ghost" href="/account">
             <ShoppingBag size={15} strokeWidth={1.75} />
-            My purchases
+            {t("orders")}
           </Link>
         </header>
 
-        <h2 className="shop__question">Where do you play?</h2>
-        <div className="pick-grid">
-          {servers.map((item) => {
-            const on = item.slug === slug;
-            return (
-              <button
-                key={item.id}
-                type="button"
-                className={on ? "pick is-on" : "pick"}
-                onClick={() => setSlug(item.slug)}
-                aria-pressed={on}
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img className="flag" src="/flags/eu.svg" alt="" width={22} height={15} />
-                <span>
-                  <small>Europe</small>
-                  <strong>[EU] Rustify {item.name}</strong>
-                </span>
-                <i className="pick__radio" aria-hidden="true">
-                  {on ? <Check size={12} strokeWidth={3} /> : null}
-                </i>
-              </button>
-            );
-          })}
+        <div className="shop-legend">
+          <article className="shop-legend__item">
+            <span className="kicker">{t("perServer")}</span>
+            <strong>{t("queueSkip")}</strong>
+            <b>{formatUsd(queue.priceCents)}</b>
+            <span>{t("queueSkipHint")}</span>
+          </article>
+          <article className="shop-legend__item shop-legend__item--vip">
+            <span className="kicker">{t("perServer")}</span>
+            <strong>{t("vip")}</strong>
+            <b>{formatUsd(vip.priceCents)}</b>
+            <span>{t("vipHint")}</span>
+          </article>
+          <article className="shop-legend__item shop-legend__item--silver">
+            <span className="kicker">{t("oneRegion")}</span>
+            <strong>{t("regionVip")}</strong>
+            <b>{formatUsd(regionVip.priceCents)}</b>
+            <span>{t("regionVipHint")}</span>
+          </article>
         </div>
 
-        <article className="feature">
-          <div className="feature__art" aria-hidden="true">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/vip-art.svg" alt="" />
-          </div>
-          <div className="feature__body">
-            <p className="eyebrow">Europe · {server.name}</p>
-            <h2>[EU] Rustify {server.name} — VIP</h2>
-            <p>{vip.summary}</p>
-            <div className="feature__price">
-              <strong>{formatEur(vip.priceCents)}</strong>
-              <span>/ {vip.durationDays} days</span>
-            </div>
-            <div className="feature__actions">
-              <Link className="btn btn-primary" href={`/store/checkout?server=${server.slug}&tier=vip`}>
-                Buy now
-                <ArrowRight size={16} />
-              </Link>
-              <Link className="btn btn-ghost" href={`/store/checkout?server=${server.slug}&tier=queue_skip`}>
-                Queue Skip · {formatEur(queue.priceCents)}
-              </Link>
-            </div>
-          </div>
-        </article>
+        <div className="shop-tabs" role="tablist" aria-label={t("stepRegion")}>
+          {clusterRegions.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              role="tab"
+              className={item.id === region ? "chip is-active" : "chip"}
+              aria-selected={item.id === region}
+              onClick={() => setRegion(item.id)}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img className="flag" src={item.flag} alt="" width={16} height={11} />
+              {t(regionTitleKey(item.id))}
+            </button>
+          ))}
+        </div>
 
-        <article className="upsell">
-          <div className="upsell__main">
-            <span className="brand__mark" aria-hidden="true">
-              R
-            </span>
-            <div>
-              <span className="pill">All servers</span>
-              <h2>[ALL] Rustify Servers — Pro</h2>
-              <p>Play on more than one server?</p>
-            </div>
+        <div className="shop-list">
+          {list.map((server) => (
+            <article key={server.id} className="shop-row">
+              <div className="shop-row__server">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img className="flag" src={regionFlag(server.region)} alt="" width={18} height={12} />
+                <div>
+                  <strong>{serverHeadline(server)}</strong>
+                  <span>{t("daysBound")}</span>
+                </div>
+              </div>
+              <Link className="shop-offer" href={`/store/checkout?server=${server.slug}&tier=queue_skip`}>
+                <b>{formatUsd(queue.priceCents)}</b>
+                <em>{t("onlyQueue")}</em>
+              </Link>
+              <Link className="shop-offer shop-offer--vip" href={`/store/checkout?server=${server.slug}&tier=vip`}>
+                <b>{formatUsd(vip.priceCents)}</b>
+                <em>{t("queueSkin")}</em>
+              </Link>
+            </article>
+          ))}
+        </div>
+
+        <article className="shop-region">
+          <div>
+            <p className="kicker">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img className="flag" src={regionFlag(region)} alt="" width={18} height={12} />
+              {regionLabel}
+            </p>
+            <h2>{t("regionVip")}</h2>
+            <p>{t("regionVipBody", { region: regionLabel })}</p>
+            <ul>
+              {list.map((server) => (
+                <li key={server.id}>
+                  <Check size={14} strokeWidth={2} />
+                  {serverHeadline(server)}
+                </li>
+              ))}
+            </ul>
           </div>
-          <div className="upsell__buy">
-            <strong>{formatEur(pro.priceCents)}</strong>
-            <span>/ {pro.durationDays} days</span>
-            {save > 0 ? <em>Save {formatEur(save)} vs VIP on every box</em> : null}
-            <Link className="btn btn-ghost" href={`/store/checkout?server=${server.slug}&tier=pro`}>
-              Details
+          <div className="shop-region__buy">
+            <strong>{formatUsd(regionVip.priceCents)}</strong>
+            <span>{t("slashDays")}</span>
+            <Link className="btn btn-silver" href={`/store/checkout?region=${region}&tier=region_vip`}>
+              {t("buyRegion", { region: regionCode })}
             </Link>
           </div>
         </article>

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { LeaderboardView } from "@/components/leaderboard/LeaderboardView";
+import { getSession } from "@/lib/auth/session";
 import { loadSteamProfile } from "@/lib/auth/steam";
 import { listLeaderboard } from "@/lib/stats/leaderboard";
 import { site } from "@/lib/site";
@@ -12,6 +13,7 @@ export const metadata: Metadata = {
 };
 
 export default async function LeaderboardPage() {
+  const user = await getSession();
   const raw = listLeaderboard();
   const uniqueIds = [...new Set(raw.filter((row) => row.source === "live").map((row) => row.steamId))].slice(
     0,
@@ -30,5 +32,5 @@ export default async function LeaderboardPage() {
     avatar: byId[row.steamId]?.avatar || row.avatar || "",
   }));
 
-  return <LeaderboardView entries={entries} />;
+  return <LeaderboardView entries={entries} currentSteamId={user?.steamId} />;
 }

@@ -1,6 +1,6 @@
 import net from "node:net";
-import { rconFromEnv, serverCatalog } from "@/lib/live/catalog";
-import { inGameGroups, type StoreTierId } from "@/lib/store/catalog";
+import { rconFromEnv } from "@/lib/live/catalog";
+import { grantServerIds, inGameGroups, type StoreTierId } from "@/lib/store/catalog";
 
 export type GrantCommand = {
   steamId: string;
@@ -78,10 +78,7 @@ async function sendSourceRcon(host: string, port: number, password: string, comm
 export class OxideCarbonRconAdapter implements GameGrantAdapter {
   async grant(command: GrantCommand): Promise<GrantResult> {
     const groups = inGameGroups(command.tier);
-    const targets =
-      command.tier === "pro"
-        ? serverCatalog.map((server) => server.id)
-        : [command.serverId];
+    const targets = grantServerIds(command.tier, command.serverId);
     const commands = targets.flatMap((serverId) =>
       groups.map((group) => `[${serverId}] oxide.usergroup add ${command.steamId} ${group}`),
     );

@@ -1,6 +1,7 @@
 import { randomUUID } from "crypto";
 import { OxideCarbonRconAdapter, type GrantResult } from "./rcon";
-import { CLUSTER_SERVER_ID, inGameGroups, isClusterTier, type StoreTierId } from "@/lib/store/catalog";
+import { CLUSTER_SERVER_ID, grantServerIds, inGameGroups, regionPackId, type StoreTierId } from "@/lib/store/catalog";
+import { serverCatalog } from "@/lib/live/catalog";
 import { loadJson, saveJson } from "@/lib/persist";
 
 export type Entitlement = {
@@ -39,22 +40,38 @@ export async function grantEntitlement(input: {
   );
   if (existing) return existing;
 
-  const startsAt = new Date();
-  const endsAt = new Date(startsAt.getTime() + input.durationDays * 86400000);
   const grant = await adapter.grant({
     steamId: input.steamId,
     serverId: input.serverId,
     tier: input.tier,
     durationDays: input.durationDays,
   });
+  const now = Date.now();
+  const current = entitlements.find(
+    (item) =>
+      item.steamId === input.steamId &&
+      item.serverId === input.serverId &&
+      item.tier === input.tier &&
+      new Date(item.endsAt).getTime() > now,
+  );
+  if (current) {
+    const base = Math.max(now, new Date(current.endsAt).getTime());
+    current.endsAt = new Date(base + input.durationDays * 86400000).toISOString();
+    current.sourcePurchaseId = input.purchaseId;
+    current.grant = grant;
+    write(entitlements);
+    return current;
+  }
+
+  const startsAt = new Date();
   const record: Entitlement = {
     id: randomUUID(),
     steamId: input.steamId,
-    serverId: isClusterTier(input.tier) ? CLUSTER_SERVER_ID : input.serverId,
+    serverId: input.serverId,
     tier: input.tier,
     groups: inGameGroups(input.tier),
     startsAt: startsAt.toISOString(),
-    endsAt: endsAt.toISOString(),
+    endsAt: new Date(startsAt.getTime() + input.durationDays * 86400000).toISOString(),
     sourcePurchaseId: input.purchaseId,
     grant,
   };
@@ -72,9 +89,13 @@ export function activeEntitlements(steamId: string, now = Date.now()) {
 }
 
 export function activeEntitlementsForServer(steamId: string, serverId: string, now = Date.now()) {
-  return activeEntitlements(steamId, now).filter(
-    (item) => item.serverId === serverId || item.serverId === CLUSTER_SERVER_ID,
-  );
+  const region = serverCatalog.find((item) => item.id === serverId)?.region;
+  return activeEntitlements(steamId, now).filter((item) => {
+    if (item.serverId === serverId) return true;
+    if (item.serverId === CLUSTER_SERVER_ID) return true;
+    if (region && item.serverId === regionPackId(region)) return true;
+    return grantServerIds(item.tier, item.serverId).includes(serverId);
+  });
 }
 
 export function inGameState(steamId: string, serverId: string) {

@@ -1,6 +1,6 @@
 import type { ClusterSnapshot, LiveDataProvider, ServerSnapshot, ServerSummary } from "./types";
 import { MockLiveDataProvider } from "./mock";
-import { connectFromEnv, currentMap, serverCatalog, sharedRuleset, wipeTimes } from "./catalog";
+import { connectFromEnv, currentMap, rulesetFor, serverCatalog, wipeTimes } from "./catalog";
 
 /**
  * Swap-in provider. Maps BattleMetrics server payloads onto the same
@@ -64,6 +64,7 @@ export class BattleMetricsProvider implements LiveDataProvider {
             slug: config.slug,
             name: config.name,
             kind: config.kind,
+            region: config.region,
             online: attributes?.status === "online",
             players,
             maxPlayers,
@@ -106,7 +107,7 @@ export class BattleMetricsProvider implements LiveDataProvider {
     const fallback = await this.fallback.getServer(slug);
     return {
       ...summary,
-      ruleset: sharedRuleset,
+      ruleset: rulesetFor(config),
       votes: fallback?.votes ?? [],
       queriedAt: new Date().toISOString(),
     };

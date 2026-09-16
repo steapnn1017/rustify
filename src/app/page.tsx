@@ -1,19 +1,20 @@
+import type { Metadata } from "next";
 import { Hero } from "@/components/home/Hero";
-import { ServerGrid } from "@/components/home/ServerGrid";
-import { getFreshSession } from "@/lib/auth/refresh";
-import { getLiveProvider } from "@/lib/live";
-import { getWhitelistRequest } from "@/lib/whitelist/store";
+import { HomeShowcase } from "@/components/home/HomeShowcase";
+import { site } from "@/lib/site";
 
 export const dynamic = "force-dynamic";
 
-export default async function HomePage() {
-  const snapshot = await getLiveProvider().getCluster();
-  const user = await getFreshSession();
-  const whitelist = user ? getWhitelistRequest(user.steamId) : null;
+export const metadata: Metadata = {
+  title: { absolute: `${site.name} — EU & US Rust cluster` },
+  description: site.description,
+};
+
+export default function HomePage() {
   return (
     <>
       <Hero />
-      <ServerGrid servers={snapshot.servers} whitelistStatus={whitelist?.status ?? null} />
+      <HomeShowcase />
     </>
   );
 }

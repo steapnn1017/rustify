@@ -3,14 +3,14 @@ export const site = {
   shortName: "Rustify",
   tagline: "The official 2x vanilla modded Rust servers.",
   description:
-    "EU Rust cluster: Main 2x, Mondays 2x, Monthly 2x. Live player counts, published wipe clocks, and Steam-linked VIP / Queue Skip.",
+    "EU and US Rust cluster: Main, Mondays, Monthly, and Solo / Duo / Trio. Live player counts, published wipe clocks, and Steam-linked VIP / Queue Skip.",
   url: process.env.SITE_URL || process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000",
   discord: process.env.NEXT_PUBLIC_DISCORD_URL || "https://discord.gg/rustify",
   steamGroup:
     process.env.NEXT_PUBLIC_STEAM_GROUP_URL ||
     "https://steamcommunity.com/groups/rustifygg",
   locale: "en-GB",
-  currency: "EUR" as const,
+  currency: "USD",
 };
 
 export const operator = {
@@ -25,7 +25,7 @@ export const operator = {
 
 export const nav = [
   { href: "/", label: "Home" },
-  { href: "/#servers", label: "Servers" },
+  { href: "/servers", label: "Servers" },
   { href: "/map-voting", label: "Map Voting" },
   { href: "/leaderboard", label: "Leaderboard" },
   { href: "/store", label: "Store" },

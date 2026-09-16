@@ -2,11 +2,16 @@ export function formatPlayers(current: number, max: number) {
   return `${current}/${max}`;
 }
 
-export function formatEur(cents: number) {
-  return new Intl.NumberFormat("cs-CZ", {
+export function formatUsd(cents: number) {
+  return new Intl.NumberFormat("en-US", {
     style: "currency",
-    currency: "EUR",
+    currency: "USD",
+    maximumFractionDigits: 0,
   }).format(cents / 100);
+}
+
+export function formatEur(cents: number) {
+  return formatUsd(cents);
 }
 
 export function formatDateTime(iso: string) {
@@ -27,9 +32,9 @@ export function remainingParts(targetIso: string, now = Date.now()) {
   return { ms, days, hours, minutes, seconds };
 }
 
-export function formatRemaining(targetIso: string, now = Date.now()) {
+export function formatRemaining(targetIso: string, now = Date.now(), wipingNow = "Wiping now") {
   const { ms, days, hours, minutes, seconds } = remainingParts(targetIso, now);
-  if (ms <= 0) return "Wiping now";
+  if (ms <= 0) return wipingNow;
   if (days > 0) return `${days}d ${hours}h ${minutes}m`;
   return `${hours}h ${minutes}m ${seconds}s`;
 }

@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import {
   Bell,
@@ -13,6 +15,8 @@ import { formatRelative } from "@/lib/format";
 import { ticketCategories } from "@/lib/support/catalog";
 import type { Ticket } from "@/lib/support/types";
 import type { UserProfile } from "@/lib/users/store";
+import { useT } from "@/lib/i18n/I18nProvider";
+import { supportCatKey } from "@/lib/i18n/labels";
 
 const icons = {
   report: Siren,
@@ -35,6 +39,7 @@ export function SupportHub({
   discordStatus?: string;
   discordReady: boolean;
 }) {
+  const t = useT();
   const discordLinked = Boolean(profile?.discord);
   const discordHref = `/api/auth/discord?returnTo=${encodeURIComponent("/support")}`;
   const steamHref = `/api/auth/steam?returnTo=${encodeURIComponent("/support")}`;
@@ -45,14 +50,14 @@ export function SupportHub({
   return (
     <section className="support">
       <div className="container support__inner">
-        <h1>How can we help?</h1>
+        <h1>{t("supportTitle")}</h1>
 
         {discordStatus === "linked" ? (
-          <p className="alert">Discord linked. Staff got a review log for this Steam account.</p>
+          <p className="alert">{t("discordLinked")}</p>
         ) : null}
         {discordStatus === "failed" ? (
           <p className="alert alert--error" role="alert">
-            Discord linking failed. Check the redirect URI in the Discord app settings, then try again.
+            {t("discordFailed")}
           </p>
         ) : null}
 
@@ -65,7 +70,7 @@ export function SupportHub({
               <span className="support-card__fallback" aria-hidden="true" />
             )}
             <div className="support-card__body">
-              <p>Welcome back,</p>
+              <p>{t("welcomeBack")}</p>
               <h2>{user.name}</h2>
               <div className="support-card__actions">
                 <a
@@ -83,39 +88,35 @@ export function SupportHub({
                   </span>
                 ) : (
                   <a className="chip-link chip-link--action" href={discordReady ? discordHref : "/api/auth/discord/dev?returnTo=/support"}>
-                    Link Discord
+                    {t("linkDiscord")}
                   </a>
                 )}
                 <Link className="chip-link chip-link--bell" href="/support/settings">
                   <Bell size={14} strokeWidth={1.75} aria-hidden="true" />
-                  You&apos;ll be told when staff reply
-                  <strong>Manage</strong>
+                  {t("discordNotify")}
+                  <strong>{t("manage")}</strong>
                 </Link>
               </div>
               {!discordLinked ? (
                 <p className="support-card__hint">
-                  Link Discord to open reports, appeals, whitelist, and store tickets. Screening (VAC / game bans)
-                  runs automatically and is sent to staff for accept / reject.
+                  {t("discordNeed")}
                 </p>
               ) : profile?.discordReview?.status === "rejected" ? (
                 <p className="support-card__hint support-card__hint--warn">
-                  Staff rejected this Discord link. You can still write in Something else.
+                  {t("discordReject")}
                 </p>
               ) : profile?.discordReview?.status === "pending" ? (
-                <p className="support-card__hint">Account review is pending with staff.</p>
+                <p className="support-card__hint">{t("discordPending")}</p>
               ) : null}
             </div>
           </div>
         ) : (
           <div className="support-card support-card--login">
             <div>
-              <h2>Sign in with Steam</h2>
-              <p>
-                Reports, appeals, whitelist, and store tickets need Steam plus a linked Discord. Something else can
-                be opened without that.
-              </p>
+              <h2>{t("signInSteam")}</h2>
+              <p>{t("supportLoginBody")}</p>
               <a className="btn btn-primary" href={steamHref}>
-                Sign in with Steam
+                {t("signInSteam")}
               </a>
             </div>
           </div>
@@ -142,13 +143,13 @@ export function SupportHub({
                   {locked ? <ShieldAlert size={18} strokeWidth={1.75} /> : <Icon size={18} strokeWidth={1.75} />}
                 </span>
                 <span>
-                  <strong>{item.title}</strong>
+                  <strong>{t(supportCatKey(item.id).title)}</strong>
                   <em>
                     {locked
                       ? user
-                        ? "Link Discord to open this queue."
-                        : "Sign in with Steam, then link Discord."
-                      : item.blurb}
+                        ? t("linkToOpen")
+                        : t("signThenLink")
+                      : t(supportCatKey(item.id).blurb)}
                   </em>
                 </span>
               </Link>
@@ -157,9 +158,22 @@ export function SupportHub({
         </div>
 
         {open.length ? (
-          <TicketGroup title="Open tickets" count={open.length} tickets={open} />
+          <TicketGroup
+            title={t("openTickets")}
+            count={open.length}
+            tickets={open}
+            openLabel={t("ticketOpen")}
+            closedLabel={t("ticketClosed")}
+          />
         ) : null}
-        <TicketGroup title="Closed tickets" count={closed.length} tickets={closed} empty="No closed tickets yet." />
+        <TicketGroup
+          title={t("closedTickets")}
+          count={closed.length}
+          tickets={closed}
+          empty={t("noClosed")}
+          openLabel={t("ticketOpen")}
+          closedLabel={t("ticketClosed")}
+        />
       </div>
     </section>
   );
@@ -170,11 +184,15 @@ function TicketGroup({
   count,
   tickets,
   empty,
+  openLabel,
+  closedLabel,
 }: {
   title: string;
   count: number;
   tickets: Ticket[];
   empty?: string;
+  openLabel: string;
+  closedLabel: string;
 }) {
   return (
     <div className="ticket-group">
@@ -191,7 +209,7 @@ function TicketGroup({
               <span className="ticket-row__title">{ticket.title}</span>
               <span className="ticket-row__meta">{formatRelative(ticket.updatedAt)}</span>
               <span className={ticket.status === "closed" ? "ticket-status is-closed" : "ticket-status"}>
-                {ticket.status}
+                {ticket.status === "closed" ? closedLabel : openLabel}
               </span>
             </Link>
           ))}

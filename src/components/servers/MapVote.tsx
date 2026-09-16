@@ -4,12 +4,13 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type { SessionUser } from "@/lib/auth/session";
 import type { VoteOption } from "@/lib/live/types";
+import { useT } from "@/lib/i18n/I18nProvider";
 
 export function MapVote({
   slug,
   options,
   user,
-  title = "Next map vote",
+  title,
   returnTo,
 }: {
   slug: string;
@@ -18,6 +19,8 @@ export function MapVote({
   title?: string;
   returnTo?: string;
 }) {
+  const t = useT();
+  const heading = title ?? t("nextMapVote");
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -49,8 +52,8 @@ export function MapVote({
   return (
     <section className="vote soft-panel">
       <header className="vote__head">
-        <h2>{title}</h2>
-        <p>{user ? "One vote per wipe." : "Sign in with Steam to vote."}</p>
+        <h2>{heading}</h2>
+        <p>{user ? t("oneVote") : t("signToVote")}</p>
       </header>
 
       <div className="vote-grid">
@@ -75,7 +78,7 @@ export function MapVote({
                   <i style={{ width: `${Math.max(8, pct)}%` }} />
                 </span>
                 <span className="vote-card__meta">
-                  {option.votes} votes · {pct}%
+                  {t("votesMeta", { n: option.votes, pct })}
                 </span>
               </span>
             </button>

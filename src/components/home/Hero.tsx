@@ -3,8 +3,11 @@
 import Link from "next/link";
 import { ChevronRight, FastForward } from "lucide-react";
 import { site } from "@/lib/site";
+import { HomeOnboarding } from "./HomeOnboarding";
+import { useT } from "@/lib/i18n/I18nProvider";
 
 export function Hero() {
+  const t = useT();
   return (
     <section className="hero">
       <div className="hero__bg" aria-hidden="true">
@@ -20,15 +23,17 @@ export function Hero() {
           </span>
           <h1>{site.shortName}</h1>
         </div>
-        <p className="hero__tag">{site.tagline}</p>
+        <p className="hero__tag">{t("homeTagline")}</p>
+
+        <HomeOnboarding />
 
         <Link className="hero-cta" href="/store">
           <span className="hero-cta__icon" aria-hidden="true">
             <FastForward size={18} strokeWidth={2} />
           </span>
           <span>
-            <strong>Wanna skip the queue?</strong>
-            <em>Jump the line and load straight in.</em>
+            <strong>{t("skipTitle")}</strong>
+            <em>{t("skipSub")}</em>
           </span>
           <span className="hero-cta__arrows" aria-hidden="true">
             <ChevronRight size={16} />

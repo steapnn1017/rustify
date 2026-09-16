@@ -1,14 +1,19 @@
+"use client";
+
 import Link from "next/link";
 import { ExternalLink, Map as MapIcon } from "lucide-react";
 import type { SessionUser } from "@/lib/auth/session";
 import type { ServerSnapshot } from "@/lib/live";
 import { connectString, formatPlayers } from "@/lib/format";
+import { regionFlag, serverHeadline } from "@/lib/live/catalog";
 import { ConnectButton } from "@/components/ui/ConnectButton";
 import { CopyButton } from "@/components/ui/CopyButton";
 import { Countdown } from "@/components/ui/Countdown";
 import { OccupancyBar } from "@/components/ui/OccupancyBar";
 import { MapVote } from "./MapVote";
 import { RulesetGrid } from "./RulesetGrid";
+import { useT } from "@/lib/i18n/I18nProvider";
+import { kindTitleKey } from "@/lib/i18n/labels";
 
 export function ServerPageView({
   server,
@@ -17,6 +22,7 @@ export function ServerPageView({
   server: ServerSnapshot;
   user: SessionUser | null;
 }) {
+  const t = useT();
   const ip = connectString(server.connect.host, server.connect.port);
 
   return (
@@ -27,40 +33,40 @@ export function ServerPageView({
             <div className="overview__badges">
               <span className={server.online ? "live" : "live is-off"}>
                 <i />
-                {server.online ? "LIVE" : "OFFLINE"}
+                {server.online ? t("live") : t("offline")}
               </span>
-              <span className="overview__kind">{server.kind}</span>
+              <span className="overview__kind">{t(kindTitleKey(server.kind))}</span>
             </div>
             <h1>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img className="flag" src="/flags/eu.svg" alt="" width={26} height={17} />
-              [EU] Rustify {server.name}
+              <img className="flag" src={regionFlag(server.region)} alt="" width={26} height={17} />
+              {serverHeadline(server)}
             </h1>
             <div className="overview__players">
               <div className="meter__top">
-                <span>Players</span>
+                <span>{t("players")}</span>
                 <strong>{formatPlayers(server.players, server.maxPlayers)}</strong>
               </div>
               <OccupancyBar value={server.players / server.maxPlayers} />
             </div>
             <div className="overview__actions">
               <ConnectButton host={server.connect.host} port={server.connect.port} />
-              <CopyButton value={ip} label="Copy IP" iconOnly />
+              <CopyButton value={ip} label={t("copyIp")} iconOnly />
               <Link className="btn btn-ghost" href={`/store?server=${server.slug}`}>
-                Store
+                {t("navStore")}
               </Link>
             </div>
           </div>
 
           <div className="overview__wipes">
             <div className="wipe-chip">
-              <span>Map wipe</span>
+              <span>{t("mapWipe")}</span>
               <strong>
                 <Countdown target={server.wipeAt} />
               </strong>
             </div>
             <div className="wipe-chip">
-              <span>BP wipe</span>
+              <span>{t("bpWipe")}</span>
               <strong>
                 <Countdown target={server.bpWipeAt} />
               </strong>
@@ -90,13 +96,13 @@ export function ServerPageView({
                 <MapIcon size={14} strokeWidth={1.75} aria-hidden="true" />
                 {server.map.size}
               </span>
-              <span className="mono">seed {server.map.seed}</span>
+              <span className="mono">{t("seedValue", { n: server.map.seed })}</span>
             </div>
           </article>
 
           <aside className="overview__side">
             <div className="soft-panel overview-panel">
-              <h2>Rules</h2>
+              <h2>{t("rules")}</h2>
               <RulesetGrid ruleset={server.ruleset} />
               <ul className="note-list">
                 {server.rulesNotes.map((note) => (

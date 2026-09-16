@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getPurchaseByInvoice } from "@/lib/commerce/orders";
 import { operator, site } from "@/lib/site";
-import { formatEur } from "@/lib/format";
+import { formatUsd } from "@/lib/format";
 import { getTier } from "@/lib/store/catalog";
 
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -30,13 +30,13 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     <p class="flag">${site.name} invoice</p>
     <h1>${purchase.invoiceId}</h1>
     <p class="muted">${operator.legalName} · IČO ${operator.ico} · ${operator.address}<br/>${operator.email}${vat ? ` · DIČ ${operator.dic}` : ""}</p>
-    <p>Bill to SteamID64 ${purchase.steamId}</p>
+    <p>Bill to SteamID64 ${purchase.steamId}${purchase.giftSteamId ? `<br/>Gift to SteamID64 ${purchase.giftSteamId}` : ""}</p>
     <table>
       <tr><th>Item</th><th>Server</th><th>Amount</th></tr>
       <tr>
         <td>${tier?.name ?? purchase.tier} · ${tier?.durationDays ?? 30} days digital content</td>
         <td>${purchase.serverName}</td>
-        <td>${formatEur(purchase.amountCents)}</td>
+        <td>${formatUsd(purchase.amountCents)}</td>
       </tr>
     </table>
     <p>${vat ? "VAT: include the applicable Czech VAT rate on this line when the operator is VAT-registered." : "VAT not applied (operator VAT flag is off)."}</p>

@@ -1,4 +1,5 @@
 import { grantEntitlement } from "@/lib/entitlements/store";
+import { redeemCoupon } from "./coupons";
 import { getPurchase, markPaid } from "./orders";
 import { getTier } from "@/lib/store/catalog";
 
@@ -10,8 +11,11 @@ export async function fulfillOrder(orderId: string) {
   if (!paid) throw new Error("Order not found");
   const tier = getTier(paid.tier);
   if (!tier) throw new Error("Unknown tier");
+  if (paid.couponCode && paid.discountCents) {
+    redeemCoupon(paid.couponCode, paid.discountCents);
+  }
   await grantEntitlement({
-    steamId: paid.steamId,
+    steamId: paid.giftSteamId || paid.steamId,
     serverId: paid.serverId,
     tier: paid.tier,
     durationDays: tier.durationDays,

@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import Link from "next/link";
-import { serverCatalog } from "@/lib/live/catalog";
+import { serverCatalog, serverHeadline } from "@/lib/live/catalog";
 import { categoryById } from "@/lib/support/catalog";
 import type { TicketField, TicketType } from "@/lib/support/types";
 
@@ -77,8 +77,8 @@ export function TicketForm({
                 <span>Server</span>
                 <select name="server" data-label="Server" required>
                   {serverCatalog.map((server) => (
-                    <option key={server.id} value={server.name}>
-                      {server.name}
+                    <option key={server.id} value={serverHeadline(server)}>
+                      {serverHeadline(server)}
                     </option>
                   ))}
                 </select>
